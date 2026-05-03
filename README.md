@@ -5,21 +5,23 @@
 
 clone Repository
 
-'''bash
+```bash
 git clone https://github.com/7BeshoyArnest/Medical-Chatbot-with-LLMs-LangChain-Pinecone-Flask-AWS.git
-'''
+```
+
 
 ### step  01- create a conda environment after opening the repo
 
-'''bash
+```bash
 conda create -n medibot python=3.10 -y
-'''
+```
 
-'''bash
+```bash
 conda activate medibot
-'''
+```
 
 ### step 02- install the requirements
-'''bash
+
+```bash
 pip install -r requirements.txt
-'''
+```
