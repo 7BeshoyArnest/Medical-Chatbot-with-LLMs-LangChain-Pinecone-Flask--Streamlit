@@ -22,7 +22,9 @@ COPY requirements.txt .
 # Upgrade pip + install with wheels 
 RUN pip install --upgrade pip setuptools wheel && \
     pip install --no-cache-dir -r requirements.txt \
-    --index-url https://pypi.org/simple 
+    --index-url https://pypi.org/simple \
+    --trusted-host pypi.org \
+    --trusted-host files.pythonhosted.org
  
 # Copy project files 
 COPY . . 
