@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.git
+.gitignore
+notebooks/
+.ipynb_checkpoints/
+wandb/
+.cache/
+*.log
+*.tmp
+.DS_Store

@@ -8,22 +8,29 @@ from langchain_core.prompts import ChatPromptTemplate
 from dotenv import load_dotenv
 from src.prompt import *
 import os
+from pinecone import Pinecone
 
 app = Flask(__name__)
 load_dotenv()
 
-PINECONE_API_KEY=os.getenv("PINECONE_API_KEY")
-GROQ_API_KEY=os.getenv("GROQ_API_KEY")
 
-os.environ["PINECONE_API_KEY"] = PINECONE_API_KEY
-os.environ["GROQ_API_KEY"] = GROQ_API_KEY
 
+PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+if not PINECONE_API_KEY:
+    raise ValueError("PINECONE_API_KEY is missing")
+
+if not GROQ_API_KEY:
+    raise ValueError("GROQ_API_KEY is missing")
+
+pc = Pinecone(api_key=PINECONE_API_KEY)
 
 embeddings = download_hugging_face_embeddings()
 index_name = "medical-chatbot"
 docsearch = PineconeVectorStore(
-    embedding=embeddings,
-    index_name=index_name
+     index=pc.Index(index_name),
+    embedding=embeddings
 )
 
 
