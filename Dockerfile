@@ -20,8 +20,9 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt . 
  
 # Upgrade pip + install with wheels 
-RUN pip install --upgrade pip setuptools wheel && \ 
-    pip install --no-cache-dir --prefer-binary -r requirements.txt 
+RUN pip install --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir -r requirements.txt \
+    --index-url https://pypi.org/simple 
  
 # Copy project files 
 COPY . . 
