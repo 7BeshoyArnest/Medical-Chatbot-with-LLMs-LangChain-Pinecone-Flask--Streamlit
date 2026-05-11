@@ -10,21 +10,26 @@ FLASK_PORT = 5000
 FLASK_URL = f"http://localhost:{FLASK_PORT}"
 
 def start_flask():
+
     if "flask_process" not in st.session_state:
 
+        # Pass secrets to Flask subprocess
         os.environ["PINECONE_API_KEY"] = st.secrets["PINECONE_API_KEY"]
         os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
-        
+
         process = subprocess.Popen(
             [sys.executable, "app.py"],
             env={**os.environ},
         )
+
         st.session_state["flask_process"] = process
 
         def cleanup():
             process.terminate()
+
             try:
                 process.wait(timeout=3)
+
             except subprocess.TimeoutExpired:
                 process.kill()
 
