@@ -1,55 +1,81 @@
 import streamlit as st
 import subprocess
 import sys
-import os
 import time
-import webbrowser
+import os
+import requests
+import atexit
 
-# ---------------- CONFIG ----------------
 FLASK_PORT = 5001
-FLASK_URL = f"http://127.0.0.1:{FLASK_PORT}"
+FLASK_URL = f"http://localhost:{FLASK_PORT}"
 
-# ---------------- START FLASK ----------------
 def start_flask():
 
     if "flask_process" in st.session_state:
         return
 
     env = os.environ.copy()
-
     env["PINECONE_API_KEY"] = st.secrets["PINECONE_API_KEY"]
     env["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
 
-    # DO NOT force port on Streamlit Cloud
+    # IMPORTANT: use a fixed safe port
+    env["PORT"] = "5001"
+
     process = subprocess.Popen(
         [sys.executable, "app.py"],
         env=env,
         stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL
+        stderr=subprocess.DEVNULL,
     )
 
-    st.session_state.flask_process = process
-# ---------------- INIT ----------------
+    st.session_state["flask_process"] = process
+
+def is_flask_ready(retries=60, delay=1.0):
+
+    for _ in range(retries):
+
+        try:
+            r = requests.get(
+                FLASK_URL,
+                timeout=10
+            )
+
+            if r.status_code == 200:
+                return True
+
+        except (
+            requests.exceptions.ConnectionError,
+            requests.exceptions.ReadTimeout
+        ):
+            time.sleep(delay)
+
+        except Exception:
+            time.sleep(delay)
+
+    return False
+
+
+# ── Start Flask once ──────────────────────────────────────────────────────────
 if "flask_started" not in st.session_state:
     start_flask()
     st.session_state.flask_started = True
 
-# ---------------- UI ----------------
-st.title("🩺 Medical Chatbot Launcher")
+if "flask_ready" not in st.session_state:
+    with st.spinner("Starting backend..."):
+        st.session_state.flask_ready = is_flask_ready()
 
-st.success("Flask backend is running")
+# ── UI ────────────────────────────────────────────────────────────────────────
+st.title("🩺 Medical Chatbot")
 
-st.markdown(f"""
-👉 Open your chatbot here:  
-[{FLASK_URL}]({FLASK_URL})
-""")
+if st.session_state.flask_ready:
+    st.success(f"Backend is running! Open your chatbot 👉 [Click here]({FLASK_URL})")
+else:
+    st.error("Backend failed to start. Check your app.py and .env file.")
 
-# ---------------- RESTART ----------------
 if st.button("🔄 Restart Backend"):
-
     if "flask_process" in st.session_state:
         st.session_state.flask_process.terminate()
         del st.session_state["flask_process"]
-
     st.session_state.flask_started = False
+    st.session_state.flask_ready = False
     st.rerun()
