@@ -6,28 +6,33 @@ import os
 import requests
 import atexit
 
+def cleanup():
+    if "flask_process" in st.session_state:
+        st.session_state["flask_process"].terminate()
+
+atexit.register(cleanup)
+
 FLASK_PORT = 5001
 FLASK_URL = f"http://localhost:{FLASK_PORT}"
 
 def start_flask():
-
     if "flask_process" in st.session_state:
-        return
+        # Check if process is actually still running
+        if st.session_state["flask_process"].poll() is None:
+            return
 
     env = os.environ.copy()
-    env["PINECONE_API_KEY"] = st.secrets["PINECONE_API_KEY"]
-    env["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
-
-    # IMPORTANT: use a fixed safe port
-    env["PORT"] = "5001"
+   
+    env["PINECONE_API_KEY"] = st.secrets.get("PINECONE_API_KEY", "")
+    env["GROQ_API_KEY"] = st.secrets.get("GROQ_API_KEY", "")
+    env["PORT"] = str(FLASK_PORT)
 
     process = subprocess.Popen(
         [sys.executable, "app.py"],
         env=env,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        stdout=subprocess.PIPE, 
+        stderr=subprocess.PIPE,
     )
-
     st.session_state["flask_process"] = process
 
 def is_flask_ready(retries=60, delay=1.0):
