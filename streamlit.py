@@ -6,7 +6,7 @@ import os
 import requests
 import atexit
 
-FLASK_PORT = 5000
+FLASK_PORT = 5001
 FLASK_URL = f"http://localhost:{FLASK_PORT}"
 
 def start_flask():
