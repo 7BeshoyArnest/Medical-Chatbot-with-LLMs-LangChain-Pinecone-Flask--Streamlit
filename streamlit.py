@@ -69,18 +69,27 @@ if "flask_ready" not in st.session_state:
     with st.spinner("Starting backend..."):
         st.session_state.flask_ready = is_flask_ready()
 
-# ── UI ────────────────────────────────────────────────────────────────────────
+# -- UI  --
 st.title("🩺 Medical Chatbot")
 
 if st.session_state.flask_ready:
-    st.success(f"Backend is running! Open your chatbot 👉 [Click here]({FLASK_URL})")
+    st.success("Backend is Ready!")
+    
+    # Use a Streamlit Chat Input instead of a Link
+    user_input = st.chat_input("Ask your medical question...")
+    
+    if user_input:
+        # Streamlit talks to Flask internally (this works on Cloud!)
+        try:
+            # We send a POST request to the local container's port 5001
+            payload = {'msg': user_input}
+            response = requests.post(f"{FLASK_URL}/get", data=payload)
+            
+            if response.status_code == 200:
+                st.markdown(f"**Bot:** {response.text}")
+            else:
+                st.error("Error from Flask backend.")
+        except Exception as e:
+            st.error(f"Failed to reach backend: {e}")
 else:
-    st.error("Backend failed to start. Check your app.py and .env file.")
-
-if st.button("🔄 Restart Backend"):
-    if "flask_process" in st.session_state:
-        st.session_state.flask_process.terminate()
-        del st.session_state["flask_process"]
-    st.session_state.flask_started = False
-    st.session_state.flask_ready = False
-    st.rerun()
+    st.error("Backend failed to start.")

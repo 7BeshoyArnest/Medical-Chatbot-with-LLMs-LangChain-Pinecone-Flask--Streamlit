@@ -35,7 +35,7 @@ docsearch = PineconeVectorStore(
 
 
 retriever = docsearch.as_retriever(search_type="similarity", search_kwargs={"k": 3})
-chatModel = ChatGroq(model="openai/gpt-oss-20b")
+chatModel = ChatGroq(model="llama-3.3-70b-versatile")
 
 prompt = ChatPromptTemplate.from_messages(
     [
