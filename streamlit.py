@@ -17,11 +17,10 @@ def start_flask():
 
     env = os.environ.copy()
 
-    # pass secrets to Flask
     env["PINECONE_API_KEY"] = st.secrets["PINECONE_API_KEY"]
     env["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
-    env["PORT"] = str(FLASK_PORT)
 
+    # DO NOT force port on Streamlit Cloud
     process = subprocess.Popen(
         [sys.executable, "app.py"],
         env=env,
@@ -30,16 +29,6 @@ def start_flask():
     )
 
     st.session_state.flask_process = process
-
-    # wait Flask to start
-    time.sleep(5)
-
-    # open browser to Flask UI (your HTML chat)
-    try:
-        webbrowser.open(FLASK_URL)
-    except:
-        pass
-
 # ---------------- INIT ----------------
 if "flask_started" not in st.session_state:
     start_flask()
