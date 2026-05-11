@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, render_template, request
 from src.helper import download_hugging_face_embeddings
 from langchain_pinecone import PineconeVectorStore
 from langchain_groq import ChatGroq
@@ -13,7 +13,7 @@ import os
 app = Flask(__name__)
 load_dotenv()
 
-# ------------------ ENV ------------------
+# ---------------- ENV ----------------
 PINECONE_API_KEY = os.environ.get("PINECONE_API_KEY")
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 
@@ -23,7 +23,7 @@ if not PINECONE_API_KEY:
 if not GROQ_API_KEY:
     raise ValueError("GROQ_API_KEY is missing")
 
-# ------------------ INIT MODELS ------------------
+# ---------------- MODEL SETUP ----------------
 pc = Pinecone(api_key=PINECONE_API_KEY)
 
 embeddings = download_hugging_face_embeddings()
@@ -50,13 +50,13 @@ prompt = ChatPromptTemplate.from_messages([
 qa_chain = create_stuff_documents_chain(llm, prompt)
 rag_chain = create_retrieval_chain(retriever, qa_chain)
 
-# ------------------ ROUTES ------------------
+# ---------------- ROUTES ----------------
 @app.route("/")
 def home():
-    return "Flask is running"
+    return render_template("chat.html")
 
 @app.route("/get", methods=["POST"])
-def chat():
+def get_response():
 
     msg = request.form.get("msg")
 
@@ -67,7 +67,7 @@ def chat():
 
     return response["answer"]
 
-# ------------------ RUN ------------------
+# ---------------- RUN ----------------
 if __name__ == "__main__":
 
     port = int(os.environ.get("PORT", 5001))
