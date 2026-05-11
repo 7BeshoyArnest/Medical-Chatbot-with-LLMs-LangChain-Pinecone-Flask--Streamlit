@@ -4,63 +4,46 @@ import sys
 import time
 import os
 import requests
-import atexit
 
-def cleanup():
-    if "flask_process" in st.session_state:
-        st.session_state["flask_process"].terminate()
-
-atexit.register(cleanup)
-
+# ------------------ CONFIG ------------------
 FLASK_PORT = 5001
-FLASK_URL = f"http://localhost:{FLASK_PORT}"
+FLASK_URL = f"http://127.0.0.1:{FLASK_PORT}"
 
+# ------------------ START FLASK ------------------
 def start_flask():
+
     if "flask_process" in st.session_state:
-        # Check if process is actually still running
-        if st.session_state["flask_process"].poll() is None:
-            return
+        return
 
     env = os.environ.copy()
-   
-    env["PINECONE_API_KEY"] = st.secrets.get("PINECONE_API_KEY", "")
-    env["GROQ_API_KEY"] = st.secrets.get("GROQ_API_KEY", "")
+
+    env["PINECONE_API_KEY"] = st.secrets["PINECONE_API_KEY"]
+    env["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
     env["PORT"] = str(FLASK_PORT)
 
     process = subprocess.Popen(
         [sys.executable, "app.py"],
         env=env,
-        stdout=subprocess.PIPE, 
-        stderr=subprocess.PIPE,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL
     )
-    st.session_state["flask_process"] = process
 
-def is_flask_ready(retries=60, delay=1.0):
+    st.session_state.flask_process = process
 
-    for _ in range(retries):
+# ------------------ CHECK FLASK ------------------
+def is_flask_ready():
 
+    for _ in range(60):
         try:
-            r = requests.get(
-                FLASK_URL,
-                timeout=10
-            )
-
+            r = requests.get(FLASK_URL, timeout=5)
             if r.status_code == 200:
                 return True
-
-        except (
-            requests.exceptions.ConnectionError,
-            requests.exceptions.ReadTimeout
-        ):
-            time.sleep(delay)
-
-        except Exception:
-            time.sleep(delay)
+        except:
+            time.sleep(1)
 
     return False
 
-
-# ── Start Flask once ──────────────────────────────────────────────────────────
+# ------------------ INIT BACKEND ------------------
 if "flask_started" not in st.session_state:
     start_flask()
     st.session_state.flask_started = True
@@ -69,27 +52,45 @@ if "flask_ready" not in st.session_state:
     with st.spinner("Starting backend..."):
         st.session_state.flask_ready = is_flask_ready()
 
-# -- UI  --
+# ------------------ UI ------------------
 st.title("🩺 Medical Chatbot")
 
-if st.session_state.flask_ready:
-    st.success("Backend is Ready!")
-    
-    # Use a Streamlit Chat Input instead of a Link
-    user_input = st.chat_input("Ask your medical question...")
-    
-    if user_input:
-        # Streamlit talks to Flask internally (this works on Cloud!)
-        try:
-            # We send a POST request to the local container's port 5001
-            payload = {'msg': user_input}
-            response = requests.post(f"{FLASK_URL}/get", data=payload)
-            
-            if response.status_code == 200:
-                st.markdown(f"**Bot:** {response.text}")
-            else:
-                st.error("Error from Flask backend.")
-        except Exception as e:
-            st.error(f"Failed to reach backend: {e}")
-else:
-    st.error("Backend failed to start.")
+if not st.session_state.flask_ready:
+    st.error("Backend failed to start")
+    st.stop()
+
+st.success("Backend is running!")
+
+# ------------------ CHAT ------------------
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
+
+prompt = st.chat_input("Ask your medical question...")
+
+if prompt:
+
+    st.session_state.messages.append({"role": "user", "content": prompt})
+
+    with st.chat_message("user"):
+        st.markdown(prompt)
+
+    try:
+        response = requests.post(
+            f"{FLASK_URL}/get",
+            data={"msg": prompt},
+            timeout=120
+        )
+
+        answer = response.text
+
+    except Exception as e:
+        answer = f"Error: {str(e)}"
+
+    st.session_state.messages.append({"role": "assistant", "content": answer})
+
+    with st.chat_message("assistant"):
+        st.markdown(answer)
