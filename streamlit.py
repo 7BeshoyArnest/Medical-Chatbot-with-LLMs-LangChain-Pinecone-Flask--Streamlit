@@ -12,27 +12,23 @@ FLASK_URL = f"http://localhost:{FLASK_PORT}"
 def start_flask():
 
     if "flask_process" in st.session_state:
-        # already running → do nothing
         return
 
-    # inject secrets into subprocess environment
     env = os.environ.copy()
     env["PINECONE_API_KEY"] = st.secrets["PINECONE_API_KEY"]
     env["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
 
-    # IMPORTANT: force port to avoid conflicts
-    env["PORT"] = "8502"
+    # IMPORTANT: use a fixed safe port
+    env["PORT"] = "5001"
 
-    # start flask
     process = subprocess.Popen(
         [sys.executable, "app.py"],
         env=env,
         stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL
+        stderr=subprocess.DEVNULL,
     )
 
-    st.session_state.flask_process = process
-    st.session_state.flask_started = True
+    st.session_state["flask_process"] = process
 
 def is_flask_ready(retries=60, delay=1.0):
 

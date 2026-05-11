@@ -64,6 +64,6 @@ def chat():
     return str(response["answer"])
 
 
-port = int(os.environ.get("PORT", 8502))
+port = int(os.environ.get("PORT", 5001))
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
